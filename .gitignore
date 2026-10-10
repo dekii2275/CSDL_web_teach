@@ -1,4 +1,20 @@
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# Virtual environments
 .venv/
+venv/
+ENV/
+
+# Environment configurations containing credentials
 .env
+backend/.env
+*.env
+
+# Postman local workspace cache
+.postman/
+
+# IDE / Editor files
+.vscode/
+.idea/
