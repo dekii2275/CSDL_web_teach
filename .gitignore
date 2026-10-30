@@ -14,6 +14,9 @@ backend/.env
 
 # Postman local workspace cache
 .postman/
+postman/collections/
+postman/documents/
+postman/environments/
 
 # IDE / Editor files
 .vscode/

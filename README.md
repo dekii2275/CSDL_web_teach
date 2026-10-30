@@ -16,11 +16,13 @@ coursehub-demo/
 │   ├── .env.example
 │   ├── requirements.txt
 │   ├── week01_python_refresh.py
-│   └── app/
-│       ├── __init__.py
-│       ├── database.py
-│       ├── schemas.py
-│       └── main.py
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── database.py
+│   │   ├── schemas.py
+│   │   └── main.py
+│   └── tests/
+│       └── week04_concurrency_test.py
 ├── database/
 │   ├── 01_schema.sql
 │   ├── 02_seed.sql
@@ -29,10 +31,19 @@ coursehub-demo/
 │   ├── 05_constraint_checks.sql
 │   ├── 06_view_demo.sql
 │   ├── 07_ai_query.sql
-│   └── 90_reset_demo.sql
+│   ├── 08_week04_demo_setup.sql
+│   ├── 09_week04_race_condition_unsafe.sql
+│   ├── 10_week04_lock_demo.sql
+│   ├── 11_generate_performance_events.sql
+│   ├── 12_explain_and_index.sql
+│   ├── 90_reset_demo.sql
+│   └── migrations/
+│       ├── 001_add_enrollment_events.sql
+│       └── 001_add_enrollment_events_rollback.sql
 ├── docs/
 │   ├── week02_notes.md
-│   └── week03_notes.md
+│   ├── week03_notes.md
+│   └── week04_notes.md
 └── postman/
     ├── CourseHub_Buoi_3.postman_collection.json
     └── CourseHub_Local.postman_environment.json
@@ -76,6 +87,22 @@ coursehub-demo/
 - Tài liệu API tương tác tự động Swagger UI tại `http://127.0.0.1:8000/docs`.
 - Bộ sưu tập kiểm thử Postman hoàn chỉnh (`postman/CourseHub_Buoi_3.postman_collection.json` và `postman/CourseHub_Local.postman_environment.json`) gồm 23 kịch bản kiểm thử có assertion tự động.
 
+### Buổi 4: Transaction, Xử Lý Đồng Thời, Migration & Tối Ưu Truy Vấn
+- **Migration có phiên bản:** Tạo bảng `schema_migrations` và bảng nhật ký kiểm toán `enrollment_events` (ghi nhận sự kiện `CREATED` và `CANCELLED`).
+- **Xử lý tranh chấp (Race Condition):**
+  - Tái hiện race condition khi 2 request cùng đăng ký suất cuối của lớp `RACE-01` (`capacity = 1`).
+  - Sử dụng cơ chế Row Lock `SELECT ... FOR UPDATE` trên bảng `class_sections` trong transaction `with engine.begin()` đảm bảo tuần tự hóa và tính nhất quán (ACID).
+  - Viết lại endpoint `POST /enrollments` và `DELETE /enrollments/{student_id}/{class_section_id}` kết hợp ghi audit log cùng transaction.
+  - Xây dựng endpoint `GET /enrollment-events` hỗ trợ lọc `student_id`, `event_type`, phân trang `skip/limit` và sắp xếp ổn định (`occurred_at DESC, id DESC`).
+- **Kiểm thử đồng thời (Concurrency Test):**
+  - Script tự động `backend/tests/week04_concurrency_test.py` dùng `ThreadPoolExecutor` và `Barrier` gửi 2 request song song.
+  - Xác nhận chính xác 1 request thành công `201 Created` và 1 request nhận `409 Conflict`, sĩ số không bị vượt sức chứa.
+- **Tối ưu hóa truy vấn với Index:**
+  - Sinh 100.000 bản ghi dữ liệu lớn `dataset = 'performance'`.
+  - Phân tích kế hoạch thực thi bằng `EXPLAIN (ANALYZE, BUFFERS)`.
+  - Thiết lập Composite Index `idx_enrollment_events_dataset_student_time (dataset, student_id, occurred_at DESC)` giúp chuyển từ `Seq Scan` sang `Index Scan`, giảm hơn 21 lần khối đệm I/O và tăng tốc hơn 14 lần.
+- **An toàn truy vấn:** Kiểm tra chống SQL Injection với bind parameters trên các tham số tìm kiếm và lọc.
+
 ---
 
 ## Hướng Dẫn Chạy Nhanh
@@ -86,5 +113,9 @@ coursehub-demo/
    python -m uvicorn backend.app.main:app --reload
    ```
 2. **Truy cập Swagger UI:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+3. **Chạy kiểm thử đồng thời (Concurrency Test):**
+   ```powershell
+   python backend/tests/week04_concurrency_test.py
+   ```
 3. **Kiểm thử với Postman:**
    Import hai tệp trong thư mục `postman/` vào Postman và chạy theo thứ tự từ request `01` đến `23`.

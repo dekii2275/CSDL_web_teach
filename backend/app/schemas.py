@@ -89,3 +89,14 @@ class EnrollmentCreateResponse(BaseModel):
     message: str
     student_id: str
     class_section_id: str
+
+
+class EnrollmentEventResponse(BaseModel):
+    id: int
+    student_id: str
+    class_section_id: str
+    event_type: str
+    source: str
+    dataset: str
+    occurred_at: datetime
+
