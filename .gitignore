@@ -9,8 +9,13 @@ ENV/
 
 # Environment configurations containing credentials
 .env
+.env.local
 backend/.env
 *.env
+
+# Frontend build and dependencies
+node_modules/
+dist/
 
 # Postman local workspace cache
 .postman/

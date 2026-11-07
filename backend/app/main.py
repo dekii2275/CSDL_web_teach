@@ -4,6 +4,7 @@ import logging
 from typing import Annotated, Any
 
 from fastapi import FastAPI, HTTPException, Query, Response, status
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
@@ -36,6 +37,15 @@ app = FastAPI(
         {"name": "Sections", "description": "Quản lý lớp học phần và sức chứa"},
         {"name": "Enrollments", "description": "Đăng ký và hủy đăng ký lớp học phần"},
     ],
+)
+
+# Buoi 5: chi cho phep frontend local goi API qua trinh duyet.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "DELETE"],
+    allow_headers=["Content-Type"],
 )
 
 
