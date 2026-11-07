@@ -16,6 +16,7 @@ backend/.env
 # Frontend build and dependencies
 node_modules/
 dist/
+.vite/
 
 # Postman local workspace cache
 .postman/
