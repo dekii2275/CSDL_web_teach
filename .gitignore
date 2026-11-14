@@ -10,8 +10,16 @@ ENV/
 # Environment configurations containing credentials
 .env
 .env.local
+.env.docker
 backend/.env
+backend/.env.docker
 *.env
+*.env.docker
+!.env.example
+!*.example
+
+# Test cache
+.pytest_cache/
 
 # Frontend build and dependencies
 node_modules/
