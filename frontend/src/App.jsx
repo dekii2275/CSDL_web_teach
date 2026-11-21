@@ -25,9 +25,13 @@ export default function App() {
       setLoading(true);
       setError("");
       try {
+        const params = new URLSearchParams();
+        if (onlyAvailable) params.set("available_only", "true");
+        const suffix = params.toString();
+        const sectionsPath = suffix ? `/sections?${suffix}` : "/sections";
         const [courseData, sectionData, enrollmentData] = await Promise.all([
           api("/courses", options),
-          api("/sections", options),
+          api(sectionsPath, options),
           api(`/students/${encodeURIComponent(studentId)}/enrollments`, options),
         ]);
         if (controller.signal.aborted) return;
@@ -46,7 +50,7 @@ export default function App() {
     }
     loadData();
     return () => controller.abort();
-  }, [studentId, refresh]);
+  }, [studentId, refresh, onlyAvailable]);
 
   function chooseStudent(event) {
     event.preventDefault();
@@ -105,12 +109,10 @@ export default function App() {
         (item) => item.class_section_id === section.class_id,
       ),
     }))
-    .filter(
-      (row) =>
-        `${row.class_id} ${row.course_code} ${row.course_name}`
-          .toLowerCase()
-          .includes(keyword) &&
-        (!onlyAvailable || row.remaining > 0),
+    .filter((row) =>
+      `${row.class_id} ${row.course_code} ${row.course_name}`
+        .toLowerCase()
+        .includes(keyword),
     );
 
   const disabled = loading || busy || Boolean(error);

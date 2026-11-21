@@ -9,6 +9,8 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from .database import engine
+from .demo_guard import demo_read_only_guard
+from .section_filters import filter_sections
 from .schemas import (
     CapacityUpdate,
     CapacityUpdateResponse,
@@ -38,6 +40,8 @@ app = FastAPI(
         {"name": "Enrollments", "description": "Đăng ký và hủy đăng ký lớp học phần"},
     ],
 )
+
+app.middleware("http")(demo_read_only_guard)
 
 # Buoi 5: chi cho phep frontend local goi API qua trinh duyet.
 app.add_middleware(
@@ -196,6 +200,12 @@ def list_lecturers() -> list[dict[str, Any]]:
     summary="Danh sách lớp học phần",
 )
 def list_sections(
+    course_code: Annotated[
+        str | None,
+        Query(
+            description="Lọc theo mã học phần (không phân biệt hoa thường)",
+        ),
+    ] = None,
     available_only: Annotated[
         bool,
         Query(
@@ -207,17 +217,17 @@ def list_sections(
     sql = """
         SELECT class_id, course_code, capacity, enrolled, remaining
         FROM v_section_summary
+        ORDER BY class_id
     """
-
-    if available_only:
-        sql += " WHERE remaining > 0"
-
-    sql += " ORDER BY class_id"
 
     with engine.connect() as connection:
         rows = connection.execute(text(sql)).mappings().all()
 
-    return [dict(row) for row in rows]
+    return filter_sections(
+        [dict(row) for row in rows],
+        course_code=course_code,
+        available_only=available_only,
+    )
 
 
 @app.get(
